@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinguAI - Smart English Learning</title>
+
+<style>
+/* SAME CSS — unchanged */
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --success: #10b981;
+    --danger: #ef4444;
+    --border: #e5e7eb;
+    --radius: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    width: 100%;
+    max-width: 600px;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.view { display: none; padding: 40px 30px; }
+.view.active { display: block; }
+
+button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div id="login-view" class="view active">
+<h2>Welcome to LinguAI 🧠</h2>
+<input type="text" id="username-input" placeholder="Enter username">
+<button id="loginBtn">Start Learning</button>
+</div>
+
+<div id="dashboard-view" class="view">
+<h2 id="welcome-msg"></h2>
+<button id="startQuizBtn">Start Quiz</button>
+<button id="logoutBtn">Logout</button>
+</div>
+
+<div id="quiz-view" class="view">
+<p id="question"></p>
+<div id="options"></div>
+<button id="submitBtn">Submit</button>
+</div>
+
+<div id="results-view" class="view">
+<h2 id="score"></h2>
+<button id="backBtn">Back</button>
+</div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+const questions = [
+{
+q: "She is very ___ at solving puzzles.",
+options: ["good", "bad", "skillful"],
+answer: ["good", "skillful"]
+}
+];
+
+const app = {
+user: null,
+index: 0,
+score: 0,
+
+show(id){
+document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+},
+
+login(){
+const name = document.getElementById("username-input").value.trim();
+if(!name) return alert("Enter name");
+
+this.user = name;
+localStorage.setItem("user", name);
+
+document.getElementById("welcome-msg").innerText = "Welcome " + name;
+this.show("dashboard-view");
+},
+
+startQuiz(){
+this.index = 0;
+this.score = 0;
+this.render();
+this.show("quiz-view");
+},
+
+render(){
+const q = questions[this.index];
+document.getElementById("question").innerText = q.q;
+
+const optDiv = document.getElementById("options");
+optDiv.innerHTML = "";
+
+q.options.forEach(opt=>{
+const btn = document.createElement("button");
+btn.innerText = opt;
+btn.onclick = ()=> btn.classList.toggle("selected");
+optDiv.appendChild(btn);
+});
+},
+
+submit(){
+const selected = [...document.querySelectorAll(".selected")].map(b=>b.innerText);
+const correct = questions[this.index].answer;
+
+if(JSON.stringify(selected.sort()) === JSON.stringify(correct.sort())){
+this.score++;
+}
+
+this.index++;
+
+if(this.index >= questions.length){
+this.finish();
+}else{
+this.render();
+}
+},
+
+finish(){
+document.getElementById("score").innerText = "Score: " + this.score;
+this.show("results-view");
+},
+
+logout(){
+localStorage.removeItem("user");
+this.show("login-view");
+}
+};
+
+// EVENTS (FIXED)
+document.getElementById("loginBtn").onclick = () => app.login();
+document.getElementById("startQuizBtn").onclick = () => app.startQuiz();
+document.getElementById("submitBtn").onclick = () => app.submit();
+document.getElementById("backBtn").onclick = () => app.show("dashboard-view");
+document.getElementById("logoutBtn").onclick = () => app.logout();
+
+// AUTO LOGIN FIX
+const saved = localStorage.getItem("user");
+if(saved){
+app.user = saved;
+document.getElementById("welcome-msg").innerText = "Welcome " + saved;
+app.show("dashboard-view");
+}
+
+});
+</script>
+
+</body>
+</html>
