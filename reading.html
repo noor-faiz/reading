@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinguAI - Smart English Learning</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #e5e7eb;
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view {
+            display: none;
+            padding: 40px 30px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 { margin-bottom: 15px; }
+        p { color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: var(--primary-hover); }
+        button.secondary { background: var(--bg); color: var(--text-main); margin-top: 10px; }
+        button.secondary:hover { background: var(--border); }
+
+        /* Dashboard Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card span { display: block; font-size: 24px; font-weight: bold; color: var(--primary); }
+        .ai-insight {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 4px 8px 8px 4px;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        /* Quiz Styles */
+        .progress-bar {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .sentence {
+            font-size: 22px;
+            font-weight: 500;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .blank {
+            display: inline-block;
+            min-width: 60px;
+            border-bottom: 2px dashed var(--text-main);
+            color: var(--primary);
+            text-align: center;
+            padding: 0 5px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .option-chip {
+            background: white;
+            border: 2px solid var(--border);
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .option-chip:hover { border-color: var(--primary); color: var(--primary); }
+        .option-chip.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Results Styles */
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 20px auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="login-view" class="view active">
+        <h2>Welcome to LinguAI 🧠</h2>
+        <p>Learn English grammar and vocabulary through context. Enter a username to save your progress and get personalized AI recommendations.</p>
+        <input type="text" id="username-input" placeholder="Enter username..." autocomplete="off">
+        <button onclick="app.login()">Start Learning</button>
+    </div>
+
+    <div id="dashboard-view" class="view">
+        <h2 id="welcome-msg">Dashboard</h2>
+        <p>Here is your current progress based on our predictive model.</p>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span id="stat-sessions">0</span>
+                Sessions
+            </div>
+            <div class="stat-card">
+                <span id="stat-avg">0%</span>
+                Avg Score
+            </div>
+        </div>
+
+        <div class="ai-insight" id="ai-insight-box">
+            <strong>🤖 AI Tutor Insight:</strong><br>
+            <span id="ai-insight-text">Complete a session so our model can analyze your weak points!</span>
+        </div>
+
+        <button onclick="app.startQuiz()">Start New Exercise</button>
+        <button class="secondary" onclick="app.logout()">Logout</button>
+    </div>
+
+    <div id="quiz-view" class="view">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p style="font-size: 14px; margin-bottom: 10px;" id="question-category">Category</p>
+        <div class="sentence" id="sentence-display">Sentence goes here</div>
+        
+        <p style="font-size: 13px; margin-bottom: 15px;">*Select <strong>ALL</strong> words that could correctly complete the sentence.</p>
+        <div class="options-container" id="options-container">
+            </div>
+
+        <button onclick="app.submitAnswer()" id="submit-btn">Check Answer</button>
+    </div>
+
+    <div id="results-view" class="view">
+        <h2 style="text-align: center;">Session Complete!</h2>
+        <div class="score-circle" id="final-score">0%</div>
+        <p style="text-align: center;" id="result-message">Great job!</p>
+        
+        <div class="ai-insight" style="background: #f0fdf4; border-color: var(--success);">
+            <strong>📊 Session Analysis:</strong><br>
+            <span id="session-analysis-text"></span>
+        </div>
+
+        <button onclick="app.returnToDashboard()">Back to Dashboard</button>
+    </div>
+
+</div>
+
+<script>
+// Mock Database of Questions with nuanced multiple valid answers
+const questionsDB = [
+    {
+        sentence: "She is very ___ at solving complex puzzles.",
+        options: [
+            { word: "good", correct: true },
+            { word: "adept", correct: true },
+            { word: "terrible", correct: false },
+            { word: "skillful", correct: true },
+            { word: "poorly", correct: false }
+        ],
+        category: "Vocabulary (Adjectives)"
+    },
+    {
+        sentence: "I have been living in Dhaka ___ 2015.",
+        options: [
+            { word: "since", correct: true },
+            { word: "for", correct: false },
+            { word: "from", correct: false },
+            { word: "after", correct: false }
+        ],
+        category: "Prepositions of Time"
+    },
+    {
+        sentence: "If it rains tomorrow, we ___ the picnic.",
+        options: [
+            { word: "will cancel", correct: true },
+            { word: "can cancel", correct: true },
+            { word: "canceled", correct: false },
+            { word: "might cancel", correct: true },
+            { word: "cancels", correct: false }
+        ],
+        category: "Conditionals"
+    },
+    {
+        sentence: "He is looking ___ his misplaced keys.",
+        options: [
+            { word: "for", correct: true },
+            { word: "at", correct: false },
+            { word: "to find", correct: false }, /* Grammatically clunky in this exact gap */
+            { word: "after", correct: false }
+        ],
+        category: "Phrasal Verbs"
+    }
+];
+
+const app = {
+    currentUser: null,
+    userData: {
+        sessions: 0,
+        totalScore: 0,
+        weaknesses: {} // Tracks missed categories for the ML model
+    },
+    currentQuiz: [],
+    questionIndex: 0,
+    selectedOptions: [],
+    sessionScore: 0,
+
+    init() {
+        const savedUser = localStorage.getItem('linguai_user');
+        if (savedUser) {
+            this.currentUser = savedUser;
+            const data = localStorage.getItem(`linguai_data_${savedUser}`);
+            if (data) this.userData = JSON.parse(data);
+            this.showView('dashboard-view');
+            this.updateDashboard();
+        }
+    },
+
+    saveData() {
+        localStorage.setItem('linguai_user', this.currentUser);
+        localStorage.setItem(`linguai_data_${this.currentUser}`, JSON.stringify(this.userData));
+    },
+
+    showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    },
+
+    login() {
+        const input = document.getElementById('username-input').value.trim();
+        if (!input) return alert("Please enter a username");
+        this.currentUser = input;
+        
+        // Try to load existing data
+        const data = localStorage.getItem(`linguai_data_${input}`);
+        if (data) {
+            this.userData = JSON.parse(data);
+        } else {
+            this.userData = { sessions: 0, totalScore: 0, weaknesses: {} };
+        }
+        
+        this.saveData();
+        this.updateDashboard();
+        this.showView('dashboard-view');
+    },
+
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('linguai_user');
+        document.getElementById('username-input').value = '';
+        this.showView('login-view');
+    },
+
+    updateDashboard() {
+        document.getElementById('welcome-msg').innerText = `Welcome back, ${this.currentUser}!`;
+        document.getElementById('stat-sessions').innerText = this.userData.sessions;
+        
+        let avg = this.userData.sessions === 0 ? 0 : Math.round(this.userData.totalScore / this.userData.sessions);
+        document.getElementById('stat-avg').innerText = `${avg}%`;
+
+        // Simulated ML Insight Engine
+        const insightText = document.getElementById('ai-insight-text');
+        if (Object.keys(this.userData.weaknesses).length === 0) {
+            insightText.innerText = "Complete more sessions so our predictive model can map your learning curve.";
+        } else {
+            // Find category with highest error count
+            let weakestCat = Object.keys(this.userData.weaknesses).reduce((a, b) => this.userData.weaknesses[a] > this.userData.weaknesses[b] ? a : b);
+            insightText.innerHTML = `Our model predicts you will struggle with <strong>${weakestCat}</strong>. We recommend focusing your next study session on this area!`;
+        }
+    },
+
+    startQuiz() {
+        // Shuffle questions for variety
+        this.currentQuiz = [...questionsDB].sort(() => 0.5 - Math.random());
+        this.questionIndex = 0;
+        this.sessionScore = 0;
+        this.showView('quiz-view');
+        this.renderQuestion();
+    },
+
+    renderQuestion() {
+        this.selectedOptions = [];
+        const q = this.currentQuiz[this.questionIndex];
+        
+        // Update Progress Bar
+        const progress = (this.questionIndex / this.currentQuiz.length) * 100;
+        document.getElementById('progress-fill').style.width = `${progress}%`;
+
+        document.getElementById('question-category').innerText = `Tags: ${q.category}`;
+        document.getElementById('sentence-display').innerHTML = q.sentence.replace('___', '<span class="blank">?</span>');
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        // Shuffle options
+        const options = [...q.options].sort(() => 0.5 - Math.random());
+        
+        options.forEach((opt, index) => {
+            const chip = document.createElement('div');
+            chip.className = 'option-chip';
+            chip.innerText = opt.word;
+            chip.onclick = () => this.toggleOption(chip, opt);
+            container.appendChild(chip);
+        });
+    },
+
+    toggleOption(chipElement, optionData) {
+        const idx = this.selectedOptions.indexOf(optionData);
+        if (idx > -1) {
+            this.selectedOptions.splice(idx, 1);
+            chipElement.classList.remove('selected');
+        } else {
+            this.selectedOptions.push(optionData);
+            chipElement.classList.add('selected');
+        }
+        
+        // Visual feedback on the blank space
+        const blank = document.querySelector('.blank');
+        if (this.selectedOptions.length > 0) {
+            blank.innerText = this.selectedOptions.map(o => o.word).join(" / ");
+        } else {
+            blank.innerText = "?";
+        }
+    },
+
+    submitAnswer() {
+        if (this.selectedOptions.length === 0) {
+            return alert("Please select at least one word!");
+        }
+
+        const q = this.currentQuiz[this.questionIndex];
+        const totalCorrectOptions = q.options.filter(o => o.correct).length;
+        
+        let correctSelections = 0;
+        let incorrectSelections = 0;
+
+        this.selectedOptions.forEach(opt => {
+            if (opt.correct) correctSelections++;
+            else incorrectSelections++;
+        });
+
+        // Scoring Logic: Earn points for correct, lose points for incorrect. Max 1, Min 0 per question.
+        let questionScore = (correctSelections / totalCorrectOptions) - (incorrectSelections * 0.5);
+        if (questionScore < 0) questionScore = 0;
+        
+        this.sessionScore += questionScore;
+
+        // "ML" Tracking: If they didn't get perfect score, log weakness
+        if (questionScore < 1) {
+            this.userData.weaknesses[q.category] = (this.userData.weaknesses[q.category] || 0) + 1;
+        }
+
+        this.questionIndex++;
+        if (this.questionIndex >= this.currentQuiz.length) {
+            this.finishQuiz();
+        } else {
+            this.renderQuestion();
+        }
+    },
+
+    finishQuiz() {
+        const percentage = Math.round((this.sessionScore / this.currentQuiz.length) * 100);
+        
+        this.userData.sessions++;
+        this.userData.totalScore += percentage;
+        this.saveData();
+
+        document.getElementById('final-score').innerText = `${percentage}%`;
+        
+        const analysis = document.getElementById('session-analysis-text');
+        if (percentage >= 80) {
+            document.getElementById('result-message').innerText = "Outstanding! You have a great grasp of nuance.";
+            analysis.innerText = "The algorithm noticed high accuracy across multiple categories.";
+        } else if (percentage >= 50) {
+            document.getElementById('result-message').innerText = "Good job, but there's room for improvement.";
+            analysis.innerText = "You occasionally select words that don't fit the context. Pay attention to prepositions and verb states.";
+        } else {
+            document.getElementById('result-message').innerText = "Keep practicing!";
+            analysis.innerText = "The model detected fundamental gaps. We'll adjust your future dashboard recommendations to help you bridge them.";
+        }
+
+        this.showView('results-view');
+    },
+
+    returnToDashboard() {
+        this.updateDashboard();
+        this.showView('dashboard-view');
+    }
+};
+
+// Initialize App
+window.onload = () => app.init();
+</script>
+
+</body>
+</html>
